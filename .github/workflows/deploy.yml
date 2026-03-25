@@ -27,16 +27,8 @@ jobs:
             set -e
 
             # Navigate to deploy directory
-            mkdir -p /home/${{ secrets.SERVER_USER }}/hello-world-node
-            cd /home/${{ secrets.SERVER_USER }}/hello-world-node
-
-            # Clone or pull latest code
-            if [ -d ".git" ]; then
-              git reset --hard
-              git pull
-            else
-              git clone ${{ github.repositoryUrl }} .
-            fi
+            mkdir -p /home/${{ secrets.SERVER_USER }}/hello-world
+            cd /home/${{ secrets.SERVER_USER }}/hello-world
 
             # Install dependencies
             npm install
@@ -45,7 +37,7 @@ jobs:
             # npm run build
 
             # Restart or start PM2
-            pm2 start server.js --name hello-world-node --update-env || pm2 restart hello-world-node
+            pm2 start server.js --name hello-world-node || pm2 restart hello-world-node
             pm2 save
 
             echo "🎉 Deployment successful"
