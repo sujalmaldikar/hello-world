@@ -28,8 +28,8 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          mkdir -p /var/www/hello-world-node
-          cd /var/www/hello-world-node
+          mkdir -p //home/azureuser
+          cd /home/azureuser
           if [ -d ".git" ]; then
             git reset --hard
             git pull
