@@ -1,4 +1,4 @@
-name: Deploy VITE App to EC2 with PM2
+name: Deploy Node App to EC2 with PM2
 
 on:
   push:
@@ -19,28 +19,33 @@ jobs:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Test SSH Connection
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }} "echo 'SSH connection successful'"
+        run: ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo 'SSH connection successful'"
 
       - name: Deploy with PM2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
-            cd /home/azureuser/
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} bash -s << EOF
+            set -e
 
-            echo "🔀 Switching branch and pulling latest..."
-            git clone ${{ github.repositoryUrl }} .
+            # Navigate to deploy directory
+            mkdir -p /home/${{ secrets.SERVER_USER }}/hello-world-node
+            cd /home/${{ secrets.SERVER_USER }}/hello-world-node
 
-            cd /home/azureuser/hello-world
-            echo "📦 Installing dependencies..."
+            # Clone or pull latest code
+            if [ -d ".git" ]; then
+              git reset --hard
+              git pull
+            else
+              git clone ${{ github.repositoryUrl }} .
+            fi
+
+            # Install dependencies
             npm install
 
-            echo "🛠 Building app..."
-            npm run build
+            # Build (if you have build step, optional)
+            # npm run build
 
-            echo "🚀 Restarting PM2 process..."
-            pm2 start server.js --name hello-world-node || pm2 restart 
-
-            echo "💾 Saving PM2 process list..."
+            # Restart or start PM2
+            pm2 start server.js --name hello-world-node --update-env || pm2 restart hello-world-node
             pm2 save
 
             echo "🎉 Deployment successful"
