@@ -37,4 +37,4 @@ jobs:
             git clone ${{ github.repositoryUrl }} .
           fi
           npm install
-          pm2 start app.js --name hello-world-node --update-env || pm2 restart hello-world-node
+          pm2 start app.js --name hello-world-node || pm2 restart hello-world-node
