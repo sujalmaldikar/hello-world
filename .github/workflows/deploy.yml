@@ -1,40 +1,47 @@
-name: Deploy Node App
+name: Deploy VITE App to EC2 with PM2
 
 on:
   push:
     branches:
-      - main  # triggers on pushes to main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
-    - name: Install dependencies
-      run: npm install
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }} "echo 'SSH connection successful'"
 
-    - name: Deploy to Server
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        script: |
-          mkdir -p //home/azureuser/helloworld
-          cd /home/azureuser/helloworld
-          if [ -d ".git" ]; then
-            git reset --hard
-            git pull
-          else
+      - name: Deploy with PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+            cd /home/azureuser/
+
+            echo "🔀 Switching branch and pulling latest..."
             git clone ${{ github.repositoryUrl }} .
-          fi
-          npm install
-          pm2 start app.js --name hello-world-node || pm2 restart hello-world-node
+
+            cd /home/azureuser/hello-world
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🛠 Building app..."
+            npm run build
+
+            echo "🚀 Restarting PM2 process..."
+            pm2 start server.js --name hello-world-node || pm2 restart 
+
+            echo "💾 Saving PM2 process list..."
+            pm2 save
+
+            echo "🎉 Deployment successful"
+          EOF
