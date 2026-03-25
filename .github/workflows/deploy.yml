@@ -1,0 +1,40 @@
+name: Deploy Node App
+
+on:
+  push:
+    branches:
+      - main  # triggers on pushes to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Deploy to Server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          mkdir -p /var/www/hello-world-node
+          cd /var/www/hello-world-node
+          if [ -d ".git" ]; then
+            git reset --hard
+            git pull
+          else
+            git clone ${{ github.repositoryUrl }} .
+          fi
+          npm install
+          pm2 start app.js --name hello-world-node --update-env || pm2 restart hello-world-node
